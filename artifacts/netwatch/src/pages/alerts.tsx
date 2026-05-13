@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useListAlerts, getListAlertsQueryKey, useResolveAlert, useCreateAlert, AlertSeverity, AlertInputSeverity } from "@workspace/api-client-react";
+import { usePause } from "@/lib/pause";
 import { formatDateTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,17 +16,16 @@ export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { paused } = usePause();
 
-  const { data: alerts, isLoading } = useListAlerts(
-    { 
-      severity: severityFilter !== "all" ? severityFilter as any : undefined,
-      resolved: statusFilter === "all" ? undefined : statusFilter === "resolved" 
-    },
-    { query: { queryKey: getListAlertsQueryKey({ 
-      severity: severityFilter !== "all" ? severityFilter as any : undefined,
-      resolved: statusFilter === "all" ? undefined : statusFilter === "resolved" 
-    }) } }
-  );
+  const qParams = {
+    severity: severityFilter !== "all" ? severityFilter as AlertSeverity : undefined,
+    resolved: statusFilter === "all" ? undefined : statusFilter === "resolved",
+  };
+
+  const { data: alerts, isLoading } = useListAlerts(qParams, {
+    query: { queryKey: getListAlertsQueryKey(qParams), refetchInterval: paused ? false : 5000 }
+  });
 
   const resolveAlert = useResolveAlert();
   const createAlert = useCreateAlert();

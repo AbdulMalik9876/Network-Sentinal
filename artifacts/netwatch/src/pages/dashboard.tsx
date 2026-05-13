@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { WorldMap } from "@/components/world-map";
 import { formatBytes } from "@/lib/utils";
+import { usePause } from "@/lib/pause";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +16,19 @@ import { Activity, ShieldAlert, Network, ArrowDownToLine, ArrowUpToLine } from "
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
+  const { paused } = usePause();
+  const interval = paused ? false : 5000;
+
   const { data: summary } = useGetTrafficSummary({
-    query: { queryKey: getGetTrafficSummaryQueryKey(), refetchInterval: 5000 }
+    query: { queryKey: getGetTrafficSummaryQueryKey(), refetchInterval: interval }
   });
 
   const { data: geoData } = useGetTrafficGeo({ limit: 100 }, {
-    query: { queryKey: getGetTrafficGeoQueryKey({ limit: 100 }), refetchInterval: 5000 }
+    query: { queryKey: getGetTrafficGeoQueryKey({ limit: 100 }), refetchInterval: interval }
   });
 
   const { data: recentTraffic } = useListTraffic({ limit: 10 }, {
-    query: { queryKey: getListTrafficQueryKey({ limit: 10 }), refetchInterval: 5000 }
+    query: { queryKey: getListTrafficQueryKey({ limit: 10 }), refetchInterval: interval }
   });
 
   return (

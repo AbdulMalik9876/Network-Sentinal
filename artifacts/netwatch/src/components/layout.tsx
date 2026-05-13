@@ -1,13 +1,11 @@
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./topbar";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const [paused, setPaused] = useState(false);
-
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-      <TopBar paused={paused} onPause={() => setPaused((p) => !p)} />
+      <TopBar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 flex flex-col h-full overflow-hidden">

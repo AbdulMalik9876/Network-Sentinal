@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useListTraffic, getListTrafficQueryKey, useCreateTrafficEvent } from "@workspace/api-client-react";
+import { usePause } from "@/lib/pause";
 import { formatBytes, formatDateTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,10 +15,11 @@ export default function TrafficPage() {
   const [direction, setDirection] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { paused } = usePause();
 
   const { data: traffic, isLoading } = useListTraffic(
     { protocol: protocol !== "all" ? protocol : undefined },
-    { query: { queryKey: getListTrafficQueryKey({ protocol: protocol !== "all" ? protocol : undefined }) } }
+    { query: { queryKey: getListTrafficQueryKey({ protocol: protocol !== "all" ? protocol : undefined }), refetchInterval: paused ? false : 5000 } }
   );
 
   const createTraffic = useCreateTrafficEvent();

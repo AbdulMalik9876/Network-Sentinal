@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useListDevices, getListDevicesQueryKey, useUpdateDevice, useCreateDevice } from "@workspace/api-client-react";
+import { usePause } from "@/lib/pause";
 import { formatBytes, formatDateTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function DevicesPage() {
+  const { paused } = usePause();
   const { data: devices, isLoading } = useListDevices({
-    query: { queryKey: getListDevicesQueryKey() }
+    query: { queryKey: getListDevicesQueryKey(), refetchInterval: paused ? false : 8000 }
   });
   
   const updateDevice = useUpdateDevice();

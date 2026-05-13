@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTheme, type Theme } from "@/lib/theme";
+import { usePause } from "@/lib/pause";
 import { Pause, Play } from "lucide-react";
 
 function useUptime() {
@@ -14,28 +15,17 @@ function useUptime() {
   return `${h}:${m}:${s}`;
 }
 
-const THEMES: { id: Theme; label: string; color: string; bg: string }[] = [
-  { id: "dark",      label: "Dark",       color: "#00d4e8", bg: "#0a0f1a" },
-  { id: "light",     label: "Light",      color: "#0369a1", bg: "#f0f4f8" },
-  { id: "green",     label: "Matrix",     color: "#22c55e", bg: "#020d05" },
-  { id: "redpurple", label: "Crimson",    color: "#e040fb", bg: "#100515" },
+const THEMES: { id: Theme; label: string; color: string }[] = [
+  { id: "dark",      label: "Dark",    color: "#00d4e8" },
+  { id: "light",     label: "Light",   color: "#0ea5e9" },
+  { id: "green",     label: "Matrix",  color: "#22c55e" },
+  { id: "redpurple", label: "Crimson", color: "#e040fb" },
 ];
 
-interface TopBarProps {
-  paused: boolean;
-  onPause: () => void;
-}
-
-export function TopBar({ paused, onPause }: TopBarProps) {
+export function TopBar() {
   const uptime = useUptime();
   const { theme, setTheme } = useTheme();
-  const [connected, setConnected] = useState(true);
-
-  // Simulate occasional brief disconnects
-  useEffect(() => {
-    const t = setInterval(() => setConnected(true), 30000);
-    return () => clearInterval(t);
-  }, []);
+  const { paused, toggle } = usePause();
 
   return (
     <div
@@ -43,7 +33,7 @@ export function TopBar({ paused, onPause }: TopBarProps) {
       style={{ background: "hsl(var(--topbar-bg))", color: "hsl(var(--topbar-fg))" }}
     >
       {/* Left */}
-      <div className="flex items-center gap-0">
+      <div className="flex items-center">
         <span className="text-primary font-semibold tracking-wider">NetWatch</span>
         <Sep />
         <span className="text-muted-foreground">by NW</span>
@@ -60,12 +50,18 @@ export function TopBar({ paused, onPause }: TopBarProps) {
         <span>
           UP <span className="text-foreground tabular-nums">{uptime}</span>
         </span>
+        {paused && (
+          <>
+            <Sep />
+            <span className="text-warning font-semibold animate-pulse">⏸ PAUSED</span>
+          </>
+        )}
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-2">
         {/* Theme dots */}
-        <div className="flex items-center gap-1.5 mr-2 border border-border rounded px-2 py-0.5">
+        <div className="flex items-center gap-1.5 border border-border rounded px-2 py-0.5">
           {THEMES.map((t) => (
             <button
               key={t.id}
@@ -74,11 +70,11 @@ export function TopBar({ paused, onPause }: TopBarProps) {
               className="relative group"
             >
               <span
-                className="block w-3.5 h-3.5 rounded-full border transition-transform"
+                className="block w-3.5 h-3.5 rounded-full border transition-all duration-150"
                 style={{
                   background: t.color,
                   borderColor: theme === t.id ? "white" : "transparent",
-                  transform: theme === t.id ? "scale(1.25)" : "scale(1)",
+                  transform: theme === t.id ? "scale(1.3)" : "scale(1)",
                   boxShadow: theme === t.id ? `0 0 6px ${t.color}` : "none",
                 }}
               />
@@ -89,27 +85,26 @@ export function TopBar({ paused, onPause }: TopBarProps) {
           ))}
         </div>
 
-        {/* LIVE indicator */}
-        <div className="flex items-center gap-1 border border-border rounded px-2 py-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-          <span className="text-success font-semibold">LIVE</span>
+        {/* LIVE / PAUSED indicator */}
+        <div className={`flex items-center gap-1 border border-border rounded px-2 py-0.5 ${paused ? "opacity-50" : ""}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${paused ? "bg-warning" : "bg-success animate-pulse"}`} />
+          <span className={paused ? "text-warning" : "text-success font-semibold"}>
+            {paused ? "PAUSED" : "LIVE"}
+          </span>
         </div>
 
         {/* Connected */}
         <div className="flex items-center gap-1 border border-border rounded px-2 py-0.5">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-success" : "bg-destructive"}`}
-          />
-          <span className={connected ? "text-success" : "text-destructive"}>
-            {connected ? "connected" : "offline"}
-          </span>
+          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+          <span className="text-success">connected</span>
         </div>
 
-        {/* Pause/Play */}
+        {/* Pause/Resume */}
         <button
-          onClick={onPause}
+          onClick={toggle}
           className="flex items-center gap-1 border border-border rounded px-2 py-0.5 hover:bg-muted transition-colors"
-          style={{ color: "hsl(var(--topbar-fg))" }}
+          style={{ color: paused ? "hsl(var(--warning))" : "hsl(var(--topbar-fg))" }}
+          title={paused ? "Resume live updates" : "Pause live updates"}
         >
           {paused ? (
             <><Play className="w-3 h-3" /><span>Resume</span></>
