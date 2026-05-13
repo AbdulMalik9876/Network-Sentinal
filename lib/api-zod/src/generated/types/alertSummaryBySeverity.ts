@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type AlertSummaryBySeverity = {
+  low?: number;
+  medium?: number;
+  high?: number;
+  critical?: number;
+};
