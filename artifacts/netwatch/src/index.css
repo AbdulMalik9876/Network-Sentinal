@@ -10,42 +10,33 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-card-border: hsl(var(--card-border));
-
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-popover-border: hsl(var(--popover-border));
-
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-primary-border: var(--primary-border);
-
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-secondary-border: var(--secondary-border);
-
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
   --color-muted-border: var(--muted-border);
-
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-accent-border: var(--accent-border);
-
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
-
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
   --color-success: hsl(var(--success));
   --color-success-foreground: hsl(var(--success-foreground));
   --color-info: hsl(var(--info));
   --color-info-foreground: hsl(var(--info-foreground));
-
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -56,18 +47,24 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-accent-border: var(--sidebar-accent-border);
   --color-sidebar-ring: hsl(var(--sidebar-ring));
-
   --font-sans: var(--app-font-sans);
   --font-mono: var(--app-font-mono);
-
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ─── SHARED DEFAULTS ─────────────────────────────────────── */
 :root {
-  /* Default to dark mode colors since it's a security dashboard */
+  --radius: 0.25rem;
+  --app-font-sans: 'Inter', system-ui, sans-serif;
+  --app-font-mono: 'Space Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+/* ─── THEME: DARK (default) ─────────────────────────────── */
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
   --background: 220 30% 6%;
   --foreground: 210 20% 85%;
@@ -77,38 +74,25 @@
   --popover: 220 30% 9%;
   --popover-foreground: 210 20% 85%;
   --popover-border: 220 20% 15%;
-  
-  /* Electric Blue/Cyan for primary */
   --primary: 190 90% 50%;
   --primary-foreground: 220 30% 6%;
   --secondary: 220 20% 15%;
   --secondary-foreground: 210 20% 85%;
-  
   --muted: 220 20% 12%;
-  --muted-foreground: 220 15% 60%;
-  
+  --muted-foreground: 220 15% 55%;
   --accent: 190 90% 50%;
   --accent-foreground: 220 30% 6%;
-  
-  /* Red for critical/destructive */
   --destructive: 0 85% 60%;
   --destructive-foreground: 210 20% 98%;
-
-  /* Amber for warning */
   --warning: 35 90% 55%;
   --warning-foreground: 220 30% 6%;
-
-  /* Green for success/online */
   --success: 140 70% 45%;
   --success-foreground: 220 30% 6%;
-
   --info: 190 90% 50%;
   --info-foreground: 220 30% 6%;
-  
   --border: 220 20% 15%;
   --input: 220 20% 15%;
   --ring: 190 90% 50%;
-
   --sidebar: 220 30% 8%;
   --sidebar-foreground: 210 20% 85%;
   --sidebar-border: 220 20% 15%;
@@ -117,19 +101,175 @@
   --sidebar-accent: 220 20% 15%;
   --sidebar-accent-foreground: 210 20% 98%;
   --sidebar-ring: 190 90% 50%;
-
-  --radius: 0.25rem;
-
-  --app-font-sans: 'Inter', system-ui, sans-serif;
-  --app-font-mono: 'Space Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
-
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --topbar-bg: 220 30% 7%;
+  --topbar-fg: 210 20% 60%;
+  --button-outline: rgba(255,255,255,.10);
+  --badge-outline: rgba(255,255,255,.05);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(255,255,255,.04);
+  --elevate-2: rgba(255,255,255,.09);
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
 
-  /* Fallback for older browsers */
+/* ─── THEME: LIGHT ───────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+  --background: 210 20% 97%;
+  --foreground: 220 30% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 12%;
+  --card-border: 210 20% 88%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 12%;
+  --popover-border: 210 20% 88%;
+  --primary: 190 80% 32%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 20% 92%;
+  --secondary-foreground: 220 30% 20%;
+  --muted: 210 20% 92%;
+  --muted-foreground: 220 15% 45%;
+  --accent: 190 80% 32%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 75% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --warning: 35 90% 42%;
+  --warning-foreground: 0 0% 100%;
+  --success: 140 60% 32%;
+  --success-foreground: 0 0% 100%;
+  --info: 190 80% 32%;
+  --info-foreground: 0 0% 100%;
+  --border: 210 20% 84%;
+  --input: 210 20% 84%;
+  --ring: 190 80% 32%;
+  --sidebar: 210 25% 93%;
+  --sidebar-foreground: 220 30% 12%;
+  --sidebar-border: 210 20% 85%;
+  --sidebar-primary: 190 80% 32%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 20% 87%;
+  --sidebar-accent-foreground: 220 30% 12%;
+  --sidebar-ring: 190 80% 32%;
+  --topbar-bg: 210 20% 91%;
+  --topbar-fg: 220 30% 35%;
+  --button-outline: rgba(0,0,0,.08);
+  --badge-outline: rgba(0,0,0,.04);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(0,0,0,.03);
+  --elevate-2: rgba(0,0,0,.06);
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+/* ─── THEME: DARK GREEN (Matrix) ────────────────────────── */
+[data-theme="green"] {
+  color-scheme: dark;
+  --background: 140 45% 3%;
+  --foreground: 130 35% 78%;
+  --card: 140 40% 5%;
+  --card-foreground: 130 35% 78%;
+  --card-border: 140 30% 10%;
+  --popover: 140 40% 5%;
+  --popover-foreground: 130 35% 78%;
+  --popover-border: 140 30% 10%;
+  --primary: 130 80% 45%;
+  --primary-foreground: 140 45% 3%;
+  --secondary: 140 25% 10%;
+  --secondary-foreground: 130 35% 78%;
+  --muted: 140 25% 8%;
+  --muted-foreground: 140 20% 42%;
+  --accent: 130 80% 45%;
+  --accent-foreground: 140 45% 3%;
+  --destructive: 0 80% 58%;
+  --destructive-foreground: 0 0% 98%;
+  --warning: 55 90% 52%;
+  --warning-foreground: 140 45% 3%;
+  --success: 130 80% 45%;
+  --success-foreground: 140 45% 3%;
+  --info: 130 80% 45%;
+  --info-foreground: 140 45% 3%;
+  --border: 140 25% 10%;
+  --input: 140 25% 10%;
+  --ring: 130 80% 45%;
+  --sidebar: 140 45% 4%;
+  --sidebar-foreground: 130 35% 78%;
+  --sidebar-border: 140 25% 10%;
+  --sidebar-primary: 130 80% 45%;
+  --sidebar-primary-foreground: 140 45% 3%;
+  --sidebar-accent: 140 25% 10%;
+  --sidebar-accent-foreground: 130 35% 85%;
+  --sidebar-ring: 130 80% 45%;
+  --topbar-bg: 140 45% 3.5%;
+  --topbar-fg: 130 30% 50%;
+  --button-outline: rgba(34,197,94,.12);
+  --badge-outline: rgba(34,197,94,.06);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(34,197,94,.04);
+  --elevate-2: rgba(34,197,94,.08);
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+/* ─── THEME: DARK RED-PURPLE (Crimson) ──────────────────── */
+[data-theme="redpurple"] {
+  color-scheme: dark;
+  --background: 280 38% 4%;
+  --foreground: 300 18% 80%;
+  --card: 280 32% 6%;
+  --card-foreground: 300 18% 80%;
+  --card-border: 280 22% 12%;
+  --popover: 280 32% 6%;
+  --popover-foreground: 300 18% 80%;
+  --popover-border: 280 22% 12%;
+  --primary: 300 85% 65%;
+  --primary-foreground: 280 38% 4%;
+  --secondary: 280 20% 12%;
+  --secondary-foreground: 300 18% 80%;
+  --muted: 280 20% 9%;
+  --muted-foreground: 280 15% 48%;
+  --accent: 320 75% 58%;
+  --accent-foreground: 280 38% 4%;
+  --destructive: 0 82% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --warning: 35 90% 55%;
+  --warning-foreground: 280 38% 4%;
+  --success: 140 60% 42%;
+  --success-foreground: 280 38% 4%;
+  --info: 300 85% 65%;
+  --info-foreground: 280 38% 4%;
+  --border: 280 22% 12%;
+  --input: 280 22% 12%;
+  --ring: 300 85% 65%;
+  --sidebar: 280 38% 5%;
+  --sidebar-foreground: 300 18% 80%;
+  --sidebar-border: 280 22% 12%;
+  --sidebar-primary: 300 85% 65%;
+  --sidebar-primary-foreground: 280 38% 4%;
+  --sidebar-accent: 280 20% 12%;
+  --sidebar-accent-foreground: 300 18% 86%;
+  --sidebar-ring: 300 85% 65%;
+  --topbar-bg: 280 38% 4.5%;
+  --topbar-fg: 300 18% 52%;
+  --button-outline: rgba(224,64,251,.12);
+  --badge-outline: rgba(224,64,251,.06);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(224,64,251,.04);
+  --elevate-2: rgba(224,64,251,.08);
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-accent-border: hsl(var(--sidebar-accent));
   --primary-border: hsl(var(--primary));
@@ -140,7 +280,7 @@
 }
 
 .dark {
-  /* Same as root since default is dark */
+  /* same as :root – default is dark */
 }
 
 @layer base {
