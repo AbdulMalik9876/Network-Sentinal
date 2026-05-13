@@ -81,37 +81,35 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-1 lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Global Traffic Map</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 h-[400px]">
-            <WorldMap events={geoData || []} />
-          </CardContent>
-        </Card>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Global Traffic Map</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 h-[500px]">
+          <WorldMap events={geoData || []} />
+        </CardContent>
+      </Card>
 
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Bandwidth (24h)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary?.recentActivity || []}>
-                <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(val) => new Date(val).getHours() + 'h'} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(val) => formatBytes(val, 0)} />
-                <Tooltip
-                  cursor={{ fill: 'hsl(var(--muted))' }}
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '4px' }}
-                  labelFormatter={(label) => new Date(label).toLocaleString()}
-                  formatter={(value: number) => formatBytes(value)}
-                />
-                <Bar dataKey="bytes" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Bandwidth (24h)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={summary?.recentActivity || []}>
+              <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(val) => new Date(val).getHours() + 'h'} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(val) => formatBytes(val, 0)} />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted))' }}
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '4px' }}
+                labelFormatter={(label) => new Date(label).toLocaleString()}
+                formatter={(value: number) => formatBytes(value)}
+              />
+              <Bar dataKey="bytes" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
