@@ -23,8 +23,8 @@ export default function Dashboard() {
     query: { queryKey: getGetTrafficSummaryQueryKey(), refetchInterval: interval }
   });
 
-  const { data: geoData } = useGetTrafficGeo({ limit: 100 }, {
-    query: { queryKey: getGetTrafficGeoQueryKey({ limit: 100 }), refetchInterval: interval }
+  const { data: geoData } = useGetTrafficGeo({ limit: 500 }, {
+    query: { queryKey: getGetTrafficGeoQueryKey({ limit: 500 }), refetchInterval: interval }
   });
 
   const { data: recentTraffic } = useListTraffic({ limit: 10 }, {
