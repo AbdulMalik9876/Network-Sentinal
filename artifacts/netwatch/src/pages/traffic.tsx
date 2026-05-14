@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useListTraffic, getListTrafficQueryKey, useCreateTrafficEvent } from "@workspace/api-client-react";
+import { useListTraffic, getListTrafficQueryKey, useCreateTrafficEvent, GeoTrafficEvent } from "@workspace/api-client-react";
 import { usePause } from "@/lib/pause";
 import { formatBytes, formatDateTime } from "@/lib/utils";
+import { TrafficDetailModal } from "@/components/traffic-detail-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function TrafficPage() {
   const [protocol, setProtocol] = useState<string>("all");
   const [direction, setDirection] = useState<string>("all");
+  const [selectedEvent, setSelectedEvent] = useState<GeoTrafficEvent | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { paused } = usePause();
@@ -56,7 +58,10 @@ export default function TrafficPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Network Traffic Feed</CardTitle>
+          <div>
+            <CardTitle>Network Traffic Feed</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Click any row to view packet details &amp; threat analysis</p>
+          </div>
           <div className="flex space-x-2">
             <Select value={protocol} onValueChange={setProtocol}>
               <SelectTrigger className="w-[120px]">
@@ -104,7 +109,9 @@ export default function TrafficPage() {
                     <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">Loading traffic...</TableCell>
                   </TableRow>
                 ) : filteredTraffic?.map((event) => (
-                  <TableRow key={event.id}>
+                  <TableRow key={event.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedEvent(event)}>
                     <TableCell className="text-muted-foreground">{formatDateTime(event.timestamp)}</TableCell>
                     <TableCell>{event.srcIp}:{event.srcPort}</TableCell>
                     <TableCell>{event.dstIp}:{event.dstPort}</TableCell>
@@ -116,11 +123,11 @@ export default function TrafficPage() {
                     </TableCell>
                     <TableCell className="text-right">{formatBytes(event.bytes)}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {event.country ? `${event.city ? event.city + ', ' : ''}${event.country}` : '-'}
+                      {event.country ? `${event.city ? event.city + ', ' : ''}${event.country}` : '—'}
                     </TableCell>
                     <TableCell>
                       {event.isSuspicious ? (
-                        <Badge variant="destructive" className="bg-destructive/20 text-destructive border-transparent">Suspicious</Badge>
+                        <Badge variant="destructive" className="bg-destructive/20 text-destructive border-transparent cursor-pointer">⚠ Suspicious</Badge>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground border-border">OK</Badge>
                       )}
@@ -137,6 +144,10 @@ export default function TrafficPage() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedEvent && (
+        <TrafficDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   );
 }

@@ -4,11 +4,14 @@ import {
   useGetTrafficGeo,
   getGetTrafficGeoQueryKey,
   useListTraffic,
-  getListTrafficQueryKey
+  getListTrafficQueryKey,
+  GeoTrafficEvent
 } from "@workspace/api-client-react";
 import { WorldMap } from "@/components/world-map";
+import { TrafficDetailModal } from "@/components/traffic-detail-modal";
 import { formatBytes } from "@/lib/utils";
 import { usePause } from "@/lib/pause";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +21,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 export default function Dashboard() {
   const { paused } = usePause();
   const interval = paused ? false : 5000;
+  const [selectedEvent, setSelectedEvent] = useState<GeoTrafficEvent | null>(null);
 
   const { data: summary } = useGetTrafficSummary({
     query: { queryKey: getGetTrafficSummaryQueryKey(), refetchInterval: interval }
@@ -118,6 +122,7 @@ export default function Dashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Live Traffic Feed</CardTitle>
+          <p className="text-xs text-muted-foreground">Click any row to view packet details</p>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-border">
@@ -134,7 +139,9 @@ export default function Dashboard() {
               </TableHeader>
               <TableBody className="font-mono text-sm">
                 {recentTraffic?.map((event) => (
-                  <TableRow key={event.id}>
+                  <TableRow key={event.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedEvent(event)}>
                     <TableCell className="text-muted-foreground">
                       {new Date(event.timestamp).toLocaleTimeString([], { hour12: false })}
                     </TableCell>
@@ -146,7 +153,7 @@ export default function Dashboard() {
                     <TableCell className="text-right">{formatBytes(event.bytes)}</TableCell>
                     <TableCell>
                       {event.isSuspicious ? (
-                        <Badge variant="destructive" className="bg-destructive/20 text-destructive border-transparent">Suspicious</Badge>
+                        <Badge variant="destructive" className="bg-destructive/20 text-destructive border-transparent">⚠ Suspicious</Badge>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground border-border">OK</Badge>
                       )}
@@ -165,6 +172,10 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedEvent && (
+        <TrafficDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   );
 }
