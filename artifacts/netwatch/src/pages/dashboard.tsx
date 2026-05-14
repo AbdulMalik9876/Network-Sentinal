@@ -9,13 +9,14 @@ import {
 } from "@workspace/api-client-react";
 import { WorldMap } from "@/components/world-map";
 import { TrafficDetailModal } from "@/components/traffic-detail-modal";
+import { ThreatFeedPanel } from "@/components/threat-feed";
 import { formatBytes } from "@/lib/utils";
 import { usePause } from "@/lib/pause";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Activity, ShieldAlert, Network, ArrowDownToLine, ArrowUpToLine } from "lucide-react";
+import { ShieldAlert, Network, ArrowDownToLine, ArrowUpToLine } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
@@ -37,14 +38,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Live Dashboard</h1>
-        <div className="flex items-center space-x-2 bg-card border border-border px-3 py-1.5 rounded-full shadow-sm">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span className="text-sm font-medium text-success">LIVE</span>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight">Live Dashboard</h1>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -89,15 +85,36 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Global Traffic Map</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 h-[500px]">
-          <WorldMap events={geoData || []} />
-        </CardContent>
-      </Card>
+      {/* Map + Threat feed side-by-side */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Global Traffic Map</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 h-[480px]">
+            <WorldMap events={geoData || []} />
+          </CardContent>
+        </Card>
 
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-destructive" />
+              <CardTitle>Live Threat Feed</CardTitle>
+              <span className="ml-auto flex items-center gap-1.5 text-xs font-medium text-success">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                LIVE
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">Click any threat to see details &amp; fix steps</p>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-0">
+            <ThreatFeedPanel />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bandwidth chart */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Bandwidth (24h)</CardTitle>
@@ -119,6 +136,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Live traffic table */}
       <Card>
         <CardHeader>
           <CardTitle>Live Traffic Feed</CardTitle>

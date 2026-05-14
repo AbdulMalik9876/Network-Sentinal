@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -12,6 +11,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } fr
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { Mail, ShieldCheck, Router, Info } from "lucide-react";
 
 const settingsSchema = z.object({
   emailAlertsEnabled: z.boolean(),
@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useGetSettings({
     query: { queryKey: getGetSettingsQueryKey() }
   });
-  
+
   const updateSettings = useUpdateSettings();
   const testEmail = useTestEmailAlert();
   const { toast } = useToast();
@@ -59,7 +59,7 @@ export default function SettingsPage() {
         alertEmail: settings.alertEmail || "",
         routerIp: settings.routerIp || "",
         routerUser: settings.routerUser || "",
-        routerPassword: "", // Password not sent from server
+        routerPassword: "",
         scanInterval: settings.scanInterval,
         suspicionThreshold: settings.suspicionThreshold,
         portScanDetection: settings.portScanDetection,
@@ -82,7 +82,6 @@ export default function SettingsPage() {
       onSuccess: () => {
         toast({ title: "Settings saved successfully" });
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
-        // Clear password field after save
         form.setValue("routerPassword", "");
       }
     });
@@ -91,10 +90,10 @@ export default function SettingsPage() {
   const handleTestEmail = () => {
     testEmail.mutate(undefined, {
       onSuccess: (res) => {
-        toast({ 
-          title: "Email Test", 
+        toast({
+          title: "Email Test",
           description: res.message,
-          variant: res.success ? "default" : "destructive" 
+          variant: res.success ? "default" : "destructive"
         });
       }
     });
@@ -110,22 +109,29 @@ export default function SettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          
+
+          {/* ── Email Notifications ──────────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>Notifications & Alerts</CardTitle>
-              <CardDescription>Configure how and when you receive security alerts.</CardDescription>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                <CardTitle>Email Notifications</CardTitle>
+              </div>
+              <CardDescription>
+                Receive instant email alerts for suspicious events and security threats.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+
               <FormField
                 control={form.control}
                 name="emailAlertsEnabled"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Email Alerts</FormLabel>
+                      <FormLabel className="text-base">Enable Email Alerts</FormLabel>
                       <FormDescription>
-                        Receive email notifications for high and critical alerts.
+                        Send an email for every high/critical alert and suspicious traffic event.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -141,23 +147,60 @@ export default function SettingsPage() {
                   name="alertEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Alert Email Address</FormLabel>
+                      <FormLabel>Recipient Email Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="admin@example.com" {...field} />
+                        <Input placeholder="admin@example.com" type="email" {...field} />
                       </FormControl>
+                      <FormDescription>Alerts will be sent to this address.</FormDescription>
                     </FormItem>
                   )}
                 />
-                <Button type="button" variant="outline" onClick={handleTestEmail} disabled={testEmail.isPending}>
-                  Test Email Delivery
+                <Button type="button" variant="outline" onClick={handleTestEmail}
+                  disabled={testEmail.isPending || !form.watch("emailAlertsEnabled")}>
+                  {testEmail.isPending ? "Sending…" : "Send Test Email"}
                 </Button>
+              </div>
+
+              {/* SMTP setup guide */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Info className="w-4 h-4 text-primary" />
+                  SMTP Configuration (required for email delivery)
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Email delivery requires SMTP credentials set as environment variables on the server.
+                  Add these in the <strong>Secrets</strong> tab of your Replit project:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
+                  {[
+                    { key: "SMTP_HOST",   ex: "smtp.gmail.com",      desc: "Your SMTP server" },
+                    { key: "SMTP_PORT",   ex: "587",                 desc: "Usually 587 (TLS)" },
+                    { key: "SMTP_USER",   ex: "you@gmail.com",       desc: "Login username/email" },
+                    { key: "SMTP_PASS",   ex: "••••••••",             desc: "App password (not login)" },
+                    { key: "SMTP_SECURE", ex: "false",               desc: "true for port 465 only" },
+                  ].map(({ key, ex, desc }) => (
+                    <div key={key} className="flex flex-col gap-0.5 bg-background rounded p-2 border border-border">
+                      <span className="text-primary font-bold">{key}</span>
+                      <span className="text-muted-foreground">{ex}</span>
+                      <span className="text-muted-foreground/70 text-[10px]">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 <strong>Gmail tip:</strong> Use an <em>App Password</em> (not your account password) — go to
+                  Google Account → Security → 2-Step Verification → App Passwords.
+                </p>
               </div>
             </CardContent>
           </Card>
 
+          {/* ── Detection Rules ──────────────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>Detection Rules</CardTitle>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                <CardTitle>Detection Rules</CardTitle>
+              </div>
               <CardDescription>Tune the sensitivity of the security engine.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -166,13 +209,13 @@ export default function SettingsPage() {
                   control={form.control}
                   name="portScanDetection"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-border p-4">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel>Port Scan Detection</FormLabel>
-                        <FormDescription>Identify systematic scanning of multiple ports.</FormDescription>
+                        <FormDescription>Flag systematic scanning of multiple ports from a single IP.</FormDescription>
                       </div>
                     </FormItem>
                   )}
@@ -182,32 +225,32 @@ export default function SettingsPage() {
                   control={form.control}
                   name="bruteForceDetection"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-border p-4">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel>Brute Force Detection</FormLabel>
-                        <FormDescription>Detect repeated failed connection attempts.</FormDescription>
+                        <FormDescription>Detect repeated failed connection attempts to SSH, RDP, or HTTP.</FormDescription>
                       </div>
                     </FormItem>
                   )}
                 />
               </div>
 
-              <Separator className="my-4" />
+              <Separator />
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-3">
                 <FormField
                   control={form.control}
                   name="suspicionThreshold"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Suspicion Threshold Score (1-100)</FormLabel>
+                      <FormLabel>Suspicion Threshold (1–100)</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
-                      <FormDescription>Higher values require more evidence before alerting.</FormDescription>
+                      <FormDescription>Higher = less sensitive. 75 is recommended.</FormDescription>
                     </FormItem>
                   )}
                 />
@@ -221,7 +264,21 @@ export default function SettingsPage() {
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
-                      <FormDescription>Alert if a device exceeds this usage in 1 hour.</FormDescription>
+                      <FormDescription>Alert if a device exceeds this in 1 hour.</FormDescription>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="scanInterval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Scan Interval (minutes)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormDescription>How often to run active network scans.</FormDescription>
                     </FormItem>
                   )}
                 />
@@ -229,10 +286,16 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* ── Router Integration ───────────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>Router Integration</CardTitle>
-              <CardDescription>Connect directly to your router for enhanced data collection.</CardDescription>
+              <div className="flex items-center gap-2">
+                <Router className="w-4 h-4 text-primary" />
+                <CardTitle>Router Integration</CardTitle>
+              </div>
+              <CardDescription>
+                Connect directly to your router for enhanced data collection and port visibility.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <FormField
@@ -244,6 +307,7 @@ export default function SettingsPage() {
                     <FormControl>
                       <Input placeholder="192.168.1.1" {...field} />
                     </FormControl>
+                    <FormDescription>The LAN IP of your router's admin interface.</FormDescription>
                   </FormItem>
                 )}
               />
@@ -281,7 +345,7 @@ export default function SettingsPage() {
 
           <div className="flex justify-end">
             <Button type="submit" disabled={updateSettings.isPending} size="lg">
-              Save Configuration
+              {updateSettings.isPending ? "Saving…" : "Save Configuration"}
             </Button>
           </div>
         </form>

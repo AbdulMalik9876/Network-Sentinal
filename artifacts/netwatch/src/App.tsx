@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { PauseProvider } from "@/lib/pause";
 import { Layout } from "@/components/layout";
+import { ThreatToastStack } from "@/components/threat-feed";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/dashboard";
@@ -42,6 +43,7 @@ function App() {
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
               <Router />
+              <ThreatToastStack />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>
