@@ -1,9 +1,10 @@
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { geoEqualEarth } from "d3-geo";
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { GeoTrafficEvent } from "@workspace/api-client-react";
 import { formatBytes, formatDateTime } from "@/lib/utils";
-import { X, ShieldAlert, MapPin, Globe, Clock, ZoomIn, ZoomOut, RotateCcw, Satellite, Map as MapIcon } from "lucide-react";
+import { X, ShieldAlert, MapPin, Globe, Clock, ZoomIn, ZoomOut, RotateCcw, Satellite, Map as MapIcon, Maximize2, Minimize2 } from "lucide-react";
+import { GlobeMap } from "@/components/globe-map";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 const MAP_WIDTH = 960;
@@ -275,7 +276,26 @@ export function WorldMap({ events }: { events: GeoTrafficEvent[] }) {
   const [zoom, setZoom] = useState(1);
   const [center, setCenter] = useState<[number, number]>([-20, 20]);
   const [satellite, setSatellite] = useState(false);
+  const [mode, setMode] = useState<"flat" | "globe">("flat");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Track fullscreen changes (e.g. user pressed Esc)
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
 
   const homeXY = useMemo(() => project(HOME[0], HOME[1]) ?? [480, 250] as [number, number], []);
   const arcs = useMemo(() => dedup(events), [events]);
@@ -322,178 +342,213 @@ export function WorldMap({ events }: { events: GeoTrafficEvent[] }) {
 
   return (
     <div ref={containerRef} className="relative w-full h-full rounded-b-lg overflow-hidden select-none"
-      style={{ background: oceanBg }}>
+      style={{ background: mode === "globe" ? "transparent" : oceanBg }}>
       <style>{CSS}</style>
 
-      {/* Satellite grid overlay */}
-      {satellite && (
+      {/* Satellite grid overlay (flat mode only) */}
+      {satellite && mode === "flat" && (
         <div className="absolute inset-0 z-0 pointer-events-none"
           style={{ backgroundImage: "radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)", opacity: 0.6 }} />
       )}
 
       {/* Header bar */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2"
-        style={{ background: satellite ? "rgba(5,15,8,0.9)" : "rgba(6,15,30,0.9)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono tracking-widest text-slate-400 uppercase">Live World Map</span>
-          {satellite && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
-              SAT
-            </span>
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 py-1.5 gap-2"
+        style={{ background: mode === "globe" ? "rgba(4,13,26,0.92)" : satellite ? "rgba(5,15,8,0.9)" : "rgba(6,15,30,0.9)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+
+        {/* Left: title + mode toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-mono tracking-widest text-slate-400 uppercase hidden sm:block">Live Map</span>
+          {/* Mode toggle */}
+          <div className="flex rounded overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+            <button onClick={() => setMode("flat")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono transition-colors"
+              style={{ background: mode === "flat" ? "#1a3a5c" : "#0d2137", color: mode === "flat" ? "#60a5fa" : "#64748b" }}>
+              <MapIcon className="w-3 h-3" />FLAT
+            </button>
+            <button onClick={() => setMode("globe")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono transition-colors"
+              style={{ background: mode === "globe" ? "#1a1a3c" : "#0d2137", color: mode === "globe" ? "#a78bfa" : "#64748b" }}>
+              <Globe className="w-3 h-3" />GLOBE
+            </button>
+          </div>
+          {mode === "flat" && satellite && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">SAT</span>
+          )}
+          {mode === "globe" && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30 font-mono">3D</span>
           )}
         </div>
-        <div className="flex items-center gap-4 text-xs font-mono">
+
+        {/* Center: legend */}
+        <div className="flex items-center gap-3 text-xs font-mono overflow-hidden">
           {[
             { label: "IN",    count: inCount,    color: "#00e5c8" },
             { label: "OUT",   count: outCount,   color: "#f59e0b" },
             { label: "ALERT", count: alertCount, color: "#ef4444" },
           ].map(({ label, count, color }) => (
-            <span key={label} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+            <span key={label} className="flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
               <span className="text-slate-300">{label} <span className="text-slate-500">{count}</span></span>
             </span>
           ))}
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ background: "#60a5fa" }} />
+          <span className="flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#60a5fa" }} />
             <span className="text-slate-300">HOME</span>
           </span>
-          <span className="flex items-center gap-1.5 text-green-400 font-semibold"
+          <span className="flex items-center gap-1 text-green-400 font-semibold shrink-0"
             style={{ animation: "nw-blink 1.4s ease-in-out infinite" }}>
-            <span className="w-2 h-2 rounded-full bg-green-400" />LIVE
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400" />LIVE
           </span>
-          <span className="text-slate-600">· scroll/pinch to zoom · click for details</span>
         </div>
+
+        {/* Right: fullscreen */}
+        <button onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          className="shrink-0 w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          style={{ background: "#0d2137", border: "1px solid rgba(255,255,255,0.12)" }}>
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+        </button>
       </div>
 
-      {/* Map */}
-      <ComposableMap width={MAP_WIDTH} height={MAP_HEIGHT}
-        style={{ width: "100%", height: "100%" }}
-        projectionConfig={{ scale: 153 }}>
-
-        <ZoomableGroup zoom={zoom} center={center}
-          onMoveEnd={({ zoom: z, coordinates }) => { setZoom(z); setCenter(coordinates as [number, number]); }}
-          minZoom={1} maxZoom={12}>
-
-          <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const name: string = geo.properties.name;
-                const hasTraffic = byCountry.has(name);
-                const isHovered = hoveredCountry === name;
-                const isSelected = selectedCountry === name;
-                const hasSuspicious = hasTraffic && (byCountry.get(name)?.some(e => e.isSuspicious) ?? false);
-
-                let fill: string;
-                if (satellite) {
-                  fill = isSelected ? "#2a5a2a"
-                    : isHovered && hasTraffic ? "#3a6a3a"
-                    : hasSuspicious ? "#5a2a1a"
-                    : earthColor(name);
-                } else {
-                  fill = isSelected ? "#1a3a5c"
-                    : isHovered && hasTraffic ? "#122b44"
-                    : hasSuspicious ? "#1f1018"
-                    : "#0d2137";
-                }
-
-                const stroke = satellite
-                  ? isSelected ? "#4ade80" : hasSuspicious ? "#ef444422" : "#1a3a1a"
-                  : isSelected ? "#60a5fa" : hasSuspicious ? "#ef444422" : "#112e4a";
-
-                return (
-                  <Geography key={geo.rsmKey} geography={geo}
-                    fill={fill} stroke={stroke} strokeWidth={isSelected ? 0.8 : 0.4}
-                    style={{
-                      default: { outline: "none", cursor: hasTraffic ? "pointer" : "default" },
-                      hover:   { outline: "none", cursor: hasTraffic ? "pointer" : "default", fill: hasTraffic ? (satellite ? "#3a6a3a" : "#122b44") : fill },
-                      pressed: { outline: "none" },
-                    }}
-                    onMouseEnter={() => hasTraffic && setHoveredCountry(name)}
-                    onMouseLeave={() => setHoveredCountry(null)}
-                    onClick={() => handleGeoClick(name)}
-                  />
-                );
-              })
-            }
-          </Geographies>
-
-          {arcs.map((event, idx) => (
-            <Arc key={event.id} event={event} homeXY={homeXY as [number, number]} idx={idx}
-              selected={selectedCountry === event.country}
-              onHover={handleArcHover} onClick={handleArcClick} />
-          ))}
-
-          {/* Home node */}
-          <g style={{ cursor: "default" }}>
-            <circle cx={homeXY[0]} cy={homeXY[1]} r={7} fill="#60a5fa"
-              style={{ filter: "drop-shadow(0 0 8px rgba(96,165,250,0.9))" }} />
-            <circle cx={homeXY[0]} cy={homeXY[1]} r={12} fill="none" stroke="#60a5fa" strokeWidth={1} strokeOpacity={0.3} />
-            <circle cx={homeXY[0]} cy={homeXY[1]} r={3} fill="#fff" opacity={0.9} />
-          </g>
-
-        </ZoomableGroup>
-      </ComposableMap>
-
-      {/* Zoom controls */}
-      <ZoomControls zoom={zoom} onZoom={handleZoom} onReset={() => { setZoom(1); setCenter([-20, 20]); }}
-        satellite={satellite} onToggleSatellite={() => setSatellite(s => !s)} />
-
-      {/* Floating tooltip */}
-      {tooltip && ttCol && (
-        <div className="absolute z-20 pointer-events-none font-mono text-xs rounded border shadow-2xl"
-          style={{
-            left: Math.min(tooltip.x + 14, (containerRef.current?.clientWidth ?? 800) - 240),
-            top: Math.max(tooltip.y - 10, 50),
-            background: "#0a1628", borderColor: ttCol.stroke,
-            boxShadow: `0 0 16px ${ttCol.glow}`, width: 220,
-          }}>
-          <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: ttCol.stroke + "40" }}>
-            <div className="w-2 h-2 rounded-full" style={{ background: ttCol.dot }} />
-            <span className="text-white font-bold">{tooltip.event.country || "Unknown"}</span>
-            {tooltip.event.isSuspicious && <span className="text-red-400 text-[10px]">⚠ SUSPICIOUS</span>}
-          </div>
-          <div className="px-3 py-2 space-y-1 text-slate-300">
-            <div className="flex justify-between">
-              <span className="text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />City</span>
-              <span>{tooltip.event.city || "Unknown"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Coords</span>
-              <span className="text-[10px]">{tooltip.event.lat?.toFixed(2)}°, {tooltip.event.lon?.toFixed(2)}°</span>
-            </div>
-            <div className="border-t border-white/10 my-1" />
-            <div className="flex justify-between">
-              <span className="text-slate-500">From</span>
-              <span style={{ color: ttCol.dot }}>{tooltip.event.srcIp}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">To</span>
-              <span>{tooltip.event.dstIp}:{tooltip.event.dstPort}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Protocol</span>
-              <span>{tooltip.event.protocol}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Size</span>
-              <span>{formatBytes(tooltip.event.bytes)}</span>
-            </div>
-          </div>
-          <div className="px-3 py-1.5 border-t text-slate-600 text-[10px]" style={{ borderColor: ttCol.stroke + "30" }}>
-            Click to see all traffic from {tooltip.event.country}
-          </div>
+      {/* ── Globe mode ── */}
+      {mode === "globe" && (
+        <div className="absolute inset-0 top-9">
+          <GlobeMap events={events} />
         </div>
       )}
 
-      {/* Country detail panel */}
-      {selectedCountry && countryEvents.length > 0 && (
-        <CountryPanel country={selectedCountry} events={countryEvents}
-          onClose={() => setSelectedCountry(null)} onSelectEvent={setSelectedEvent} />
-      )}
+      {/* ── Flat map mode ── */}
+      {mode === "flat" && (
+        <>
+          <ComposableMap width={MAP_WIDTH} height={MAP_HEIGHT}
+            style={{ width: "100%", height: "100%" }}
+            projectionConfig={{ scale: 153 }}>
 
-      {/* Event detail modal */}
-      {selectedEvent && (
-        <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+            <ZoomableGroup zoom={zoom} center={center}
+              onMoveEnd={({ zoom: z, coordinates }) => { setZoom(z); setCenter(coordinates as [number, number]); }}
+              minZoom={1} maxZoom={12}>
+
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map((geo) => {
+                    const name: string = geo.properties.name;
+                    const hasTraffic = byCountry.has(name);
+                    const isHovered = hoveredCountry === name;
+                    const isSelected = selectedCountry === name;
+                    const hasSuspicious = hasTraffic && (byCountry.get(name)?.some(e => e.isSuspicious) ?? false);
+
+                    let fill: string;
+                    if (satellite) {
+                      fill = isSelected ? "#2a5a2a"
+                        : isHovered && hasTraffic ? "#3a6a3a"
+                        : hasSuspicious ? "#5a2a1a"
+                        : earthColor(name);
+                    } else {
+                      fill = isSelected ? "#1a3a5c"
+                        : isHovered && hasTraffic ? "#122b44"
+                        : hasSuspicious ? "#1f1018"
+                        : "#0d2137";
+                    }
+
+                    const stroke = satellite
+                      ? isSelected ? "#4ade80" : hasSuspicious ? "#ef444422" : "#1a3a1a"
+                      : isSelected ? "#60a5fa" : hasSuspicious ? "#ef444422" : "#112e4a";
+
+                    return (
+                      <Geography key={geo.rsmKey} geography={geo}
+                        fill={fill} stroke={stroke} strokeWidth={isSelected ? 0.8 : 0.4}
+                        style={{
+                          default: { outline: "none", cursor: hasTraffic ? "pointer" : "default" },
+                          hover:   { outline: "none", cursor: hasTraffic ? "pointer" : "default", fill: hasTraffic ? (satellite ? "#3a6a3a" : "#122b44") : fill },
+                          pressed: { outline: "none" },
+                        }}
+                        onMouseEnter={() => hasTraffic && setHoveredCountry(name)}
+                        onMouseLeave={() => setHoveredCountry(null)}
+                        onClick={() => handleGeoClick(name)}
+                      />
+                    );
+                  })
+                }
+              </Geographies>
+
+              {arcs.map((event, idx) => (
+                <Arc key={event.id} event={event} homeXY={homeXY as [number, number]} idx={idx}
+                  selected={selectedCountry === event.country}
+                  onHover={handleArcHover} onClick={handleArcClick} />
+              ))}
+
+              {/* Home node */}
+              <g style={{ cursor: "default" }}>
+                <circle cx={homeXY[0]} cy={homeXY[1]} r={7} fill="#60a5fa"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(96,165,250,0.9))" }} />
+                <circle cx={homeXY[0]} cy={homeXY[1]} r={12} fill="none" stroke="#60a5fa" strokeWidth={1} strokeOpacity={0.3} />
+                <circle cx={homeXY[0]} cy={homeXY[1]} r={3} fill="#fff" opacity={0.9} />
+              </g>
+
+            </ZoomableGroup>
+          </ComposableMap>
+
+          {/* Zoom + satellite controls */}
+          <ZoomControls zoom={zoom} onZoom={handleZoom} onReset={() => { setZoom(1); setCenter([-20, 20]); }}
+            satellite={satellite} onToggleSatellite={() => setSatellite(s => !s)} />
+
+          {/* Floating tooltip */}
+          {tooltip && ttCol && (
+            <div className="absolute z-20 pointer-events-none font-mono text-xs rounded border shadow-2xl"
+              style={{
+                left: Math.min(tooltip.x + 14, (containerRef.current?.clientWidth ?? 800) - 240),
+                top: Math.max(tooltip.y - 10, 50),
+                background: "#0a1628", borderColor: ttCol.stroke,
+                boxShadow: `0 0 16px ${ttCol.glow}`, width: 220,
+              }}>
+              <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: ttCol.stroke + "40" }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: ttCol.dot }} />
+                <span className="text-white font-bold">{tooltip.event.country || "Unknown"}</span>
+                {tooltip.event.isSuspicious && <span className="text-red-400 text-[10px]">⚠ SUSPICIOUS</span>}
+              </div>
+              <div className="px-3 py-2 space-y-1 text-slate-300">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />City</span>
+                  <span>{tooltip.event.city || "Unknown"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Coords</span>
+                  <span className="text-[10px]">{tooltip.event.lat?.toFixed(2)}°, {tooltip.event.lon?.toFixed(2)}°</span>
+                </div>
+                <div className="border-t border-white/10 my-1" />
+                <div className="flex justify-between">
+                  <span className="text-slate-500">From</span>
+                  <span style={{ color: ttCol.dot }}>{tooltip.event.srcIp}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">To</span>
+                  <span>{tooltip.event.dstIp}:{tooltip.event.dstPort}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Protocol</span>
+                  <span>{tooltip.event.protocol}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Size</span>
+                  <span>{formatBytes(tooltip.event.bytes)}</span>
+                </div>
+              </div>
+              <div className="px-3 py-1.5 border-t text-slate-600 text-[10px]" style={{ borderColor: ttCol.stroke + "30" }}>
+                Click to see all traffic from {tooltip.event.country}
+              </div>
+            </div>
+          )}
+
+          {/* Country detail panel */}
+          {selectedCountry && countryEvents.length > 0 && (
+            <CountryPanel country={selectedCountry} events={countryEvents}
+              onClose={() => setSelectedCountry(null)} onSelectEvent={setSelectedEvent} />
+          )}
+
+          {/* Event detail modal */}
+          {selectedEvent && (
+            <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+          )}
+        </>
       )}
     </div>
   );
