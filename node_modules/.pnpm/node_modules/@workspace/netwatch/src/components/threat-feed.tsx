@@ -20,9 +20,10 @@ const SEV: Record<string, { color: string; bg: string; border: string; Icon: Rea
   medium:   { color: "#f59e0b", bg: "#f59e0b15", border: "#f59e0b40", Icon: AlertTriangle },
   low:      { color: "#22c55e", bg: "#22c55e15", border: "#22c55e40", Icon: Info },
 };
+
 function sev(s: string) { return SEV[s] ?? SEV.low; }
 
-// ── Sliding toast notification ─────────────────────────────────────────────
+// Toast Notification Component (unchanged)
 function ToastNotif({ notif, onClose, onView }: { notif: LiveNotif; onClose: () => void; onView: () => void }) {
   const s = sev(notif.alert.severity);
   const SevIcon = s.Icon;
@@ -34,8 +35,7 @@ function ToastNotif({ notif, onClose, onView }: { notif: LiveNotif; onClose: () 
   }, []);
 
   return (
-    <div
-      className="pointer-events-auto w-80 rounded-lg border shadow-2xl overflow-hidden font-mono text-xs transition-all duration-300"
+    <div className="pointer-events-auto w-80 rounded-lg border shadow-2xl overflow-hidden font-mono text-xs transition-all duration-300"
       style={{
         background: "#0a1628",
         borderColor: s.border,
@@ -43,9 +43,7 @@ function ToastNotif({ notif, onClose, onView }: { notif: LiveNotif; onClose: () 
         transform: entering ? "translateX(120%)" : "translateX(0)",
         opacity: entering ? 0 : 1,
       }}>
-      {/* Severity bar */}
       <div className="h-1 w-full" style={{ background: s.color }} />
-
       <div className="p-3">
         <div className="flex items-start gap-2">
           <SevIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: s.color }} />
@@ -58,26 +56,19 @@ function ToastNotif({ notif, onClose, onView }: { notif: LiveNotif; onClose: () 
               </span>
             </div>
             <p className="text-slate-400 leading-relaxed line-clamp-2">{notif.alert.message}</p>
-            {notif.alert.srcIp && (
-              <p className="text-slate-600 mt-0.5">from {notif.alert.srcIp}</p>
-            )}
+            {notif.alert.srcIp && <p className="text-slate-600 mt-0.5">from {notif.alert.srcIp}</p>}
           </div>
           <button onClick={onClose} className="text-slate-600 hover:text-slate-300 shrink-0">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-
         <div className="flex items-center justify-between mt-2 pt-2 border-t" style={{ borderColor: "#1e3a5f" }}>
           <span className="text-slate-600">{new Date(notif.alert.timestamp).toLocaleTimeString()}</span>
-          <button onClick={onView}
-            className="text-xs font-medium transition-colors hover:text-white"
-            style={{ color: s.color }}>
+          <button onClick={onView} className="text-xs font-medium transition-colors hover:text-white" style={{ color: s.color }}>
             View Details →
           </button>
         </div>
       </div>
-
-      {/* Auto-dismiss progress bar */}
       <AutoDismissBar color={s.color} duration={8000} onExpire={onClose} />
     </div>
   );
@@ -85,7 +76,6 @@ function ToastNotif({ notif, onClose, onView }: { notif: LiveNotif; onClose: () 
 
 function AutoDismissBar({ color, duration, onExpire }: { color: string; duration: number; onExpire: () => void }) {
   const [width, setWidth] = useState(100);
-
   useEffect(() => {
     const start = Date.now();
     const interval = setInterval(() => {
@@ -107,7 +97,7 @@ function AutoDismissBar({ color, duration, onExpire }: { color: string; duration
   );
 }
 
-// ── Toast stack (top-right overlay) ───────────────────────────────────────
+// ── Toast Stack ───────────────────────────────────────────────────────────
 export function ThreatToastStack() {
   const { paused } = usePause();
   const [notifs, setNotifs] = useState<LiveNotif[]>([]);
@@ -115,16 +105,17 @@ export function ThreatToastStack() {
   const seenIds = useRef(new Set<number>());
   const initialised = useRef(false);
 
-  const { data: alerts } = useListAlerts(
+  const { data: alertsRaw } = useListAlerts(
     { resolved: false },
     { query: { queryKey: getListAlertsQueryKey({ resolved: false }), refetchInterval: paused ? false : 3000 } }
   );
 
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw?.data ?? []);
+
   useEffect(() => {
-    if (!alerts) return;
+    if (!alerts || alerts.length === 0) return;
 
     if (!initialised.current) {
-      // On first load, mark all existing alerts as seen (don't toast them)
       alerts.forEach(a => seenIds.current.add(a.id));
       initialised.current = true;
       return;
@@ -143,7 +134,7 @@ export function ThreatToastStack() {
         visible: true,
       })),
       ...prev,
-    ].slice(0, 5)); // max 5 toasts
+    ].slice(0, 5));
   }, [alerts]);
 
   const dismiss = (id: string) => setNotifs(prev => prev.filter(n => n.id !== id));
@@ -162,30 +153,28 @@ export function ThreatToastStack() {
           />
         ))}
       </div>
-
       {selected && <AlertDetailModal alert={selected} onClose={() => setSelected(null)} />}
     </>
   );
 }
 
-// ── Persistent panel (shown inside dashboard card) ────────────────────────
+// ── Threat Feed Panel ─────────────────────────────────────────────────────
 export function ThreatFeedPanel() {
   const { paused } = usePause();
   const [selected, setSelected] = useState<Alert | null>(null);
 
-  const { data: alerts, isLoading } = useListAlerts(
+  const { data: alertsRaw, isLoading } = useListAlerts(
     { resolved: false },
     { query: { queryKey: getListAlertsQueryKey({ resolved: false, _feed: true } as any), refetchInterval: paused ? false : 3000 } }
   );
 
-  const recent = (alerts ?? []).slice(0, 8);
+  const alerts = Array.isArray(alertsRaw) ? alertsRaw : (alertsRaw?.data ?? []);
+  const recent = alerts.slice(0, 8);
 
   return (
     <>
       <div className="space-y-0 divide-y divide-border rounded-md border border-border overflow-hidden">
-        {isLoading && (
-          <div className="py-6 text-center text-muted-foreground text-sm">Loading threats…</div>
-        )}
+        {isLoading && <div className="py-6 text-center text-muted-foreground text-sm">Loading threats…</div>}
 
         {!isLoading && recent.length === 0 && (
           <div className="py-8 flex flex-col items-center gap-2 text-muted-foreground">
@@ -194,7 +183,7 @@ export function ThreatFeedPanel() {
           </div>
         )}
 
-        {recent.map((alert) => {
+        {recent.map((alert: Alert) => {
           const s = sev(alert.severity);
           const SevIcon = s.Icon;
           return (
@@ -202,13 +191,10 @@ export function ThreatFeedPanel() {
               key={alert.id}
               onClick={() => setSelected(alert)}
               className="w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors flex items-start gap-3 group">
-
-              {/* Severity dot + icon */}
               <div className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
                 style={{ background: s.bg, border: `1px solid ${s.border}` }}>
                 <SevIcon className="w-4 h-4" style={{ color: s.color }} />
               </div>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-sm text-foreground">{alert.type}</span>
@@ -223,10 +209,7 @@ export function ThreatFeedPanel() {
                   <span>{formatDateTime(alert.timestamp)}</span>
                 </div>
               </div>
-
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors self-center shrink-0">
-                →
-              </span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors self-center shrink-0">→</span>
             </button>
           );
         })}
