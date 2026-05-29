@@ -32,9 +32,12 @@ export default function Dashboard() {
     query: { queryKey: getGetTrafficGeoQueryKey({ limit: 500 }), refetchInterval: interval }
   });
 
-  const { data: recentTraffic } = useListTraffic({ limit: 10 }, {
+  const { data: _trafficRaw } = useListTraffic({ limit: 10 }, {
     query: { queryKey: getListTrafficQueryKey({ limit: 10 }), refetchInterval: interval }
   });
+  const recentTraffic = Array.isArray(_trafficRaw)
+    ? _trafficRaw
+    : (_trafficRaw as any)?.items ?? (_trafficRaw as any)?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -49,7 +52,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-mono">{formatBytes(summary?.totalBytes || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{summary?.totalEvents.toLocaleString()} events</p>
+            <p className="text-xs text-muted-foreground mt-1">{summary?.totalEvents?.toLocaleString()} events</p>
           </CardContent>
         </Card>
 

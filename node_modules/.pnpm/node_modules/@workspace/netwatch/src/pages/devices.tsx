@@ -15,9 +15,10 @@ import { Label } from "@/components/ui/label";
 
 export default function DevicesPage() {
   const { paused } = usePause();
-  const { data: devices, isLoading } = useListDevices({
-    query: { queryKey: getListDevicesQueryKey(), refetchInterval: paused ? false : 8000 }
+  const { data: _devicesRaw, isLoading } = useListDevices({
+  query: { queryKey: getListDevicesQueryKey(), refetchInterval: paused ? false : 8000 }
   });
+  const devices = Array.isArray(_devicesRaw) ? _devicesRaw : (_devicesRaw as any)?.items ?? (_devicesRaw as any)?.data ?? [];
   
   const updateDevice = useUpdateDevice();
   const createDevice = useCreateDevice();

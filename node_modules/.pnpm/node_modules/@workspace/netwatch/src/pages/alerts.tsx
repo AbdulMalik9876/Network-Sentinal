@@ -25,9 +25,10 @@ export default function AlertsPage() {
     resolved: statusFilter === "all" ? undefined : statusFilter === "resolved",
   };
 
-  const { data: alerts, isLoading } = useListAlerts(qParams, {
-    query: { queryKey: getListAlertsQueryKey(qParams), refetchInterval: paused ? false : 5000 }
+  const { data: _alertsRaw, isLoading } = useListAlerts(qParams, {
+  query: { queryKey: getListAlertsQueryKey(qParams), refetchInterval: paused ? false : 5000 }
   });
+  const alerts = Array.isArray(_alertsRaw) ? _alertsRaw : (_alertsRaw as any)?.items ?? (_alertsRaw as any)?.data ?? [];
 
   const resolveAlert = useResolveAlert();
   const createAlert = useCreateAlert();

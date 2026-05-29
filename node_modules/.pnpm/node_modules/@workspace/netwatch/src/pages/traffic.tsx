@@ -19,10 +19,13 @@ export default function TrafficPage() {
   const queryClient = useQueryClient();
   const { paused } = usePause();
 
-  const { data: traffic, isLoading } = useListTraffic(
-    { protocol: protocol !== "all" ? protocol : undefined },
-    { query: { queryKey: getListTrafficQueryKey({ protocol: protocol !== "all" ? protocol : undefined }), refetchInterval: paused ? false : 5000 } }
+  const { data: _trafficRaw, isLoading } = useListTraffic(
+  { protocol: protocol !== "all" ? protocol : undefined },
+  { query: { queryKey: getListTrafficQueryKey({ protocol: protocol !== "all" ? protocol : undefined }), refetchInterval: paused ? false : 5000 } }
   );
+  const traffic = Array.isArray(_trafficRaw)
+    ? _trafficRaw
+    : (_trafficRaw as any)?.items ?? (_trafficRaw as any)?.data ?? [];
 
   const createTraffic = useCreateTrafficEvent();
 
@@ -45,8 +48,7 @@ export default function TrafficPage() {
     });
   };
 
-  const filteredTraffic = traffic?.filter(t => direction === "all" || t.direction === direction);
-
+  const filteredTraffic = traffic.filter(t => direction === "all" || t.direction === direction);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

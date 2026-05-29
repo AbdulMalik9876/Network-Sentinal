@@ -9,9 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Shield } from "lucide-react";
 
 export default function PortsPage() {
-  const { data: portScans, isLoading, refetch, isRefetching } = useScanPorts({
-    query: { queryKey: getScanPortsQueryKey() }
+  const { data: _portScansRaw, isLoading, refetch, isRefetching } = useScanPorts({
+  query: { queryKey: getScanPortsQueryKey() }
   });
+  const portScans = Array.isArray(_portScansRaw) ? _portScansRaw : (_portScansRaw as any)?.items ?? (_portScansRaw as any)?.data ?? [];
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
