@@ -1,57 +1,63 @@
-**✅ Here is the full content of `README.md` file:**
-
-
 # Network Sentinal
 
 A modern **Real-time Network Monitoring and Threat Detection** System.
 
-![Network Sentinal Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Preview)
-<!-- Replace above link with your actual screenshot later -->
+## 📸 Screenshots
+
+### Dashboard
+![Dashboard](Images/Dashboard.png)
+
+### Alerts / Threat Feed
+![Alerts](Images/Alearts.png)
+
+### Traffic Feed
+![Traffic Feed](Images/Traffic_feed.png)
+
+### Devices
+![Devices](Images/Devices.png)
+
+### Settings
+![Settings](Images/Settings.png)
+
+
 
 ## ✨ Features
 
 - **Live Network Monitoring** — Real-time traffic visualization
-- **Threat Detection & Alerts** — Detects suspicious activity instantly
+- **Advanced Threat Detection** — Automatically detects suspicious activity
+- **Detailed Alert System** — View full alert information with **suggested solutions** for each threat
 - **IP Geolocation** — Shows country, city, and ISP for every connection
-- **Beautiful Dashboard** — Clean, responsive React UI with Tailwind CSS
-- **Toast Notifications** — Real-time sliding threat alerts
-- **Persistent Threat Feed** — Latest threats with detailed view
+- **Real-time Toast Notifications** — Sliding alerts in the corner
+- **Persistent Threat Feed** — Latest threats with one-click details
+- **Email Notifications** (Planned) — Get important alerts directly in your email
 - **PostgreSQL Database** — All data is stored persistently
-- **Traffic Simulator** — Built-in simulator for testing and demo
+- **Built-in Traffic Simulator** — For testing and demonstration
 
 ## 🛠 Tech Stack
 
-- **Backend**: Node.js + Express + TypeScript + Drizzle ORM
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Node.js, Express, TypeScript, Drizzle ORM
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
 - **Database**: PostgreSQL
-- **Logging**: Pino
-- **Package Manager**: pnpm
 
 ## 📥 Installation & Setup
 
 ### 1. Clone the Repository
-
 ```bash
 git clone https://github.com/AbdulMalik9876/Network-Sentinal.git
 cd Network-Sentinal
 ```
 
 ### 2. Install Dependencies
-
 ```bash
 npm install -g pnpm
 pnpm install
 ```
 
-### 3. Setup PostgreSQL
-
+### 3. Setup Database
 - Make sure **PostgreSQL** is installed and running
-- Create a database: `network_sentinel`
+- Create a database named `network_sentinel`
 
-### 4. Create `.env` File
-
-Create a file named `.env` in the root folder with:
-
+### 4. Create `.env` file
 ```env
 PORT=5000
 NODE_ENV=development
@@ -62,24 +68,14 @@ BASE_PATH="/"
 
 ### 5. Run the Project
 
-#### Easiest Way (Windows):
-
-Double-click the `run.bat` file (if you have it).
-or in terminal go to your project folder and type
-```
-./run.bat
-```
-
-#### Manual Way:
-
-**Terminal 1 - Backend**
+**Terminal 1 (Backend):**
 ```powershell
 $env:PORT = "5000"
 $env:NODE_ENV = "development"
 pnpm --filter @workspace/api-server run dev
 ```
 
-**Terminal 2 - Frontend**
+**Terminal 2 (Frontend):**
 ```powershell
 $env:PORT = "5173"
 $env:BASE_PATH = "/"
