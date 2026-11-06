@@ -1,0 +1,528 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: NetWatch Network Security Monitor API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: traffic
+    description: Network traffic events
+  - name: alerts
+    description: Security alerts
+  - name: devices
+    description: Network devices / users
+  - name: settings
+    description: Application settings
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /traffic:
+    get:
+      operationId: listTraffic
+      tags: [traffic]
+      summary: List traffic events with optional filters
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: protocol
+          in: query
+          schema: { type: string }
+        - name: deviceId
+          in: query
+          schema: { type: string }
+        - name: since
+          in: query
+          description: ISO timestamp - fetch events after this time
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of traffic events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrafficEvent"
+    post:
+      operationId: createTrafficEvent
+      tags: [traffic]
+      summary: Record a new traffic event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrafficEventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrafficEvent"
+
+  /traffic/summary:
+    get:
+      operationId: getTrafficSummary
+      tags: [traffic]
+      summary: Get aggregate traffic summary (totals, top devices, protocols)
+      responses:
+        "200":
+          description: Traffic summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrafficSummary"
+
+  /traffic/geo:
+    get:
+      operationId: getTrafficGeo
+      tags: [traffic]
+      summary: Get traffic events with geo coordinates for world map
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 200 }
+      responses:
+        "200":
+          description: Geo-tagged traffic events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeoTrafficEvent"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List security alerts
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: severity
+          in: query
+          schema: { type: string, enum: [low, medium, high, critical] }
+        - name: resolved
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+    post:
+      operationId: createAlert
+      tags: [alerts]
+      summary: Create a new alert (used internally by monitoring engine)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/resolve:
+    patch:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Mark an alert as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/summary:
+    get:
+      operationId: getAlertSummary
+      tags: [alerts]
+      summary: Get counts of alerts by severity and recent unresolved
+      responses:
+        "200":
+          description: Alert summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertSummary"
+
+  /devices:
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List all known network devices with their bandwidth usage
+      responses:
+        "200":
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Device"
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Register or update a device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceInput"
+      responses:
+        "201":
+          description: Created device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /devices/{id}:
+    patch:
+      operationId: updateDevice
+      tags: [devices]
+      summary: Update device info (label, blocked status)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceUpdate"
+      responses:
+        "200":
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get application settings (email, router config, thresholds)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /settings/test-email:
+    post:
+      operationId: testEmailAlert
+      tags: [settings]
+      summary: Send a test email alert
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestEmailResult"
+
+  /ports/scan:
+    get:
+      operationId: scanPorts
+      tags: [traffic]
+      summary: Get open port scan results for router/devices
+      responses:
+        "200":
+          description: Port scan results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortScanResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    TrafficEvent:
+      type: object
+      required: [id, srcIp, dstIp, srcPort, dstPort, protocol, bytes, timestamp, direction]
+      properties:
+        id: { type: integer }
+        srcIp: { type: string }
+        dstIp: { type: string }
+        srcPort: { type: integer }
+        dstPort: { type: integer }
+        protocol: { type: string }
+        bytes: { type: integer }
+        direction: { type: string, enum: [inbound, outbound, internal] }
+        country: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        lat: { type: ["number", "null"] }
+        lon: { type: ["number", "null"] }
+        deviceId: { type: ["integer", "null"] }
+        isSuspicious: { type: boolean }
+        suspicionReason: { type: ["string", "null"] }
+        timestamp: { type: string }
+
+    TrafficEventInput:
+      type: object
+      required: [srcIp, dstIp, srcPort, dstPort, protocol, bytes, direction]
+      properties:
+        srcIp: { type: string }
+        dstIp: { type: string }
+        srcPort: { type: integer }
+        dstPort: { type: integer }
+        protocol: { type: string }
+        bytes: { type: integer }
+        direction: { type: string, enum: [inbound, outbound, internal] }
+        country: { type: string }
+        city: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        deviceId: { type: integer }
+        isSuspicious: { type: boolean }
+        suspicionReason: { type: string }
+
+    GeoTrafficEvent:
+      type: object
+      required: [id, srcIp, dstIp, protocol, bytes, direction, timestamp]
+      properties:
+        id: { type: integer }
+        srcIp: { type: string }
+        dstIp: { type: string }
+        protocol: { type: string }
+        bytes: { type: integer }
+        direction: { type: string }
+        country: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        lat: { type: ["number", "null"] }
+        lon: { type: ["number", "null"] }
+        isSuspicious: { type: boolean }
+        timestamp: { type: string }
+
+    TrafficSummary:
+      type: object
+      required: [totalEvents, totalBytes, inboundBytes, outboundBytes, suspiciousCount, topProtocols, topCountries, recentActivity]
+      properties:
+        totalEvents: { type: integer }
+        totalBytes: { type: integer }
+        inboundBytes: { type: integer }
+        outboundBytes: { type: integer }
+        suspiciousCount: { type: integer }
+        topProtocols:
+          type: array
+          items:
+            type: object
+            required: [protocol, count, bytes]
+            properties:
+              protocol: { type: string }
+              count: { type: integer }
+              bytes: { type: integer }
+        topCountries:
+          type: array
+          items:
+            type: object
+            required: [country, count, bytes]
+            properties:
+              country: { type: string }
+              count: { type: integer }
+              bytes: { type: integer }
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [hour, count, bytes]
+            properties:
+              hour: { type: string }
+              count: { type: integer }
+              bytes: { type: integer }
+
+    Alert:
+      type: object
+      required: [id, type, severity, message, srcIp, timestamp, resolved]
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        message: { type: string }
+        srcIp: { type: string }
+        dstIp: { type: ["string", "null"] }
+        port: { type: ["integer", "null"] }
+        deviceId: { type: ["integer", "null"] }
+        resolved: { type: boolean }
+        resolvedAt: { type: ["string", "null"] }
+        emailSent: { type: boolean }
+        timestamp: { type: string }
+
+    AlertInput:
+      type: object
+      required: [type, severity, message, srcIp]
+      properties:
+        type: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        message: { type: string }
+        srcIp: { type: string }
+        dstIp: { type: string }
+        port: { type: integer }
+        deviceId: { type: integer }
+
+    AlertSummary:
+      type: object
+      required: [total, unresolved, bySeverity]
+      properties:
+        total: { type: integer }
+        unresolved: { type: integer }
+        bySeverity:
+          type: object
+          properties:
+            low: { type: integer }
+            medium: { type: integer }
+            high: { type: integer }
+            critical: { type: integer }
+
+    Device:
+      type: object
+      required: [id, ip, mac, label, firstSeen, lastSeen, totalBytes, isBlocked]
+      properties:
+        id: { type: integer }
+        ip: { type: string }
+        mac: { type: ["string", "null"] }
+        label: { type: string }
+        vendor: { type: ["string", "null"] }
+        firstSeen: { type: string }
+        lastSeen: { type: string }
+        totalBytes: { type: integer }
+        downloadBytes: { type: integer }
+        uploadBytes: { type: integer }
+        isBlocked: { type: boolean }
+        isOnline: { type: boolean }
+
+    DeviceInput:
+      type: object
+      required: [ip, label]
+      properties:
+        ip: { type: string }
+        mac: { type: string }
+        label: { type: string }
+        vendor: { type: string }
+
+    DeviceUpdate:
+      type: object
+      properties:
+        label: { type: string }
+        isBlocked: { type: boolean }
+
+    Settings:
+      type: object
+      required: [id, emailAlertsEnabled, alertEmail, routerIp, scanInterval, suspicionThreshold, portScanDetection, bruteForceDetection]
+      properties:
+        id: { type: integer }
+        emailAlertsEnabled: { type: boolean }
+        alertEmail: { type: ["string", "null"] }
+        routerIp: { type: ["string", "null"] }
+        routerUser: { type: ["string", "null"] }
+        scanInterval: { type: integer }
+        suspicionThreshold: { type: integer }
+        portScanDetection: { type: boolean }
+        bruteForceDetection: { type: boolean }
+        highBandwidthThresholdMb: { type: integer }
+
+    SettingsUpdate:
+      type: object
+      properties:
+        emailAlertsEnabled: { type: boolean }
+        alertEmail: { type: string }
+        routerIp: { type: string }
+        routerUser: { type: string }
+        routerPassword: { type: string }
+        scanInterval: { type: integer }
+        suspicionThreshold: { type: integer }
+        portScanDetection: { type: boolean }
+        bruteForceDetection: { type: boolean }
+        highBandwidthThresholdMb: { type: integer }
+
+    TestEmailResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+
+    PortScanResult:
+      type: object
+      required: [ip, port, protocol, state, service, timestamp]
+      properties:
+        ip: { type: string }
+        port: { type: integer }
+        protocol: { type: string }
+        state: { type: string, enum: [open, closed, filtered] }
+        service: { type: ["string", "null"] }
+        timestamp: { type: string }
