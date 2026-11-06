@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedInitialData, generateRealtimeTraffic, resetDemoData } from "./lib/simulator";
+import { catchUp, resetDemoData } from "./lib/simulator";
 
 // `npm run reset-demo`: wipe the tables, fill them with 48h of demo data, exit.
 if (process.argv.includes("--reset-demo")) {
@@ -31,20 +31,8 @@ app.listen(port, async (err) => {
 
   logger.info({ port }, "Server listening");
 
-  // Seed initial data
-  try {
-    await seedInitialData();
-    logger.info("Initial data seeded");
-  } catch (err) {
-    logger.error({ err }, "Error seeding initial data");
-  }
-
-  // Generate simulated realtime traffic every 5 seconds
-  setInterval(async () => {
-    try {
-      await generateRealtimeTraffic();
-    } catch (err) {
-      logger.error({ err }, "Error generating realtime traffic");
-    }
-  }, 5000);
+  // Seed if empty, then keep demo traffic flowing (same logic Vercel runs per request).
+  const tick = () => catchUp().catch((err) => logger.error({ err }, "Demo traffic catch-up failed"));
+  await tick();
+  setInterval(tick, 30_000);
 });

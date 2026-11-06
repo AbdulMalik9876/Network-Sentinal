@@ -173,15 +173,23 @@ function demoPortScans(now: number) {
   ];
 }
 
+type TrafficRow = typeof trafficEventsTable.$inferInsert;
+
+/** Traffic for a time window: ~45 events/hour at peak, ~0.35 attacks/hour. */
+function eventsBetween(from: number, to: number): TrafficRow[] {
+  const events: TrafficRow[] = [];
+  for (let t = from; t < to; t += 60_000) {
+    const at = () => new Date(Math.min(to, t + Math.random() * 60_000));
+    if (Math.random() < (45 * activity(new Date(t))) / 60) events.push(normalEvent(at()).row);
+    if (Math.random() < 0.35 / 60) events.push(attackEvent(at()));
+  }
+  return events;
+}
+
 /** Fill an empty database with `hours` of realistic history. */
 export async function seedDemoData(hours = 48): Promise<void> {
   const now = Date.now();
-  const events: (typeof trafficEventsTable.$inferInsert)[] = [];
-  for (let t = now - hours * 3600_000; t < now; t += 3600_000) {
-    const n = Math.round(45 * activity(new Date(t)));
-    for (let i = 0; i < n; i++) events.push(normalEvent(new Date(t + Math.random() * 3600_000)).row);
-    if (Math.random() < 0.35) events.push(attackEvent(new Date(t + Math.random() * 3600_000)));
-  }
+  const events = eventsBetween(now - hours * 3600_000, now);
 
   const totals = new Map<string, { down: number; up: number }>();
   for (const e of events) {
@@ -223,39 +231,60 @@ export async function resetDemoData(): Promise<void> {
   await seedInitialData();
 }
 
-export async function generateRealtimeTraffic(): Promise<void> {
-  const now = new Date();
-  // Skip some ticks at night so the live feed follows the same daily rhythm.
-  if (Math.random() > activity(now) / 1.5) return;
-  try {
-    if (Math.random() < 0.03) {
-      const row = attackEvent(now);
-      await db.insert(trafficEventsTable).values(row);
-      const [settings] = await db.select().from(settingsTable).limit(1);
-      if (!settings?.portScanDetection) return;
-      const [alert] = await db.insert(alertsTable).values({
-        type: "suspicious_port", severity: row.dstPort === 23 || row.dstPort === 445 ? "critical" : "high",
-        message: `${row.service} (port ${row.dstPort}) probe from ${row.city}, ${row.country} [${row.srcIp}]`,
-        srcIp: row.srcIp, dstIp: row.dstIp, port: row.dstPort,
-      }).returning();
-      if (settings.emailAlertsEnabled && settings.alertEmail) {
-        const { sendAlertEmail } = await import("./email");
-        if (await sendAlertEmail(settings.alertEmail, alert)) {
-          await db.update(alertsTable).set({ emailSent: true }).where(eq(alertsTable.id, alert.id));
-        }
-      }
-      return;
+/**
+ * Fill the gap since the newest traffic row (at most 48h), so the data stays
+ * "live" without a background timer. Safe to call on every request: it only
+ * runs when the newest row is over a minute old, and one caller at a time.
+ */
+export async function catchUp(): Promise<void> {
+  await seedInitialData();
+  const [{ last }] = await db.select({ last: sql<string | null>`max(timestamp)` }).from(trafficEventsTable);
+  const now = Date.now();
+  const lastMs = last ? new Date(last).getTime() : now;
+  if (now - lastMs < 60_000) return;
+  const events = eventsBetween(Math.max(lastMs, now - 48 * 3600_000), now);
+  if (events.length === 0) return;
+
+  const newAlerts = await db.transaction(async (tx) => {
+    const [{ ok }] = (await tx.execute(sql`select pg_try_advisory_xact_lock(4711) as ok`)).rows as { ok: boolean }[];
+    if (!ok) return [];
+    for (let i = 0; i < events.length; i += 500) await tx.insert(trafficEventsTable).values(events.slice(i, i + 500));
+
+    const totals = new Map<string, { down: number; up: number; last: Date }>();
+    for (const e of events) {
+      if (e.isSuspicious) continue;
+      const ip = e.direction === "inbound" ? e.dstIp : e.srcIp;
+      const t = totals.get(ip) ?? { down: 0, up: 0, last: e.timestamp as Date };
+      if (e.direction === "inbound") t.down += e.bytes ?? 0; else t.up += e.bytes ?? 0;
+      if ((e.timestamp as Date) > t.last) t.last = e.timestamp as Date;
+      totals.set(ip, t);
     }
-    const { device, row } = normalEvent(now);
-    await db.insert(trafficEventsTable).values(row);
-    const b = row.bytes;
-    const dir = row.direction === "inbound"
-      ? { downloadBytes: sql`download_bytes + ${b}` }
-      : { uploadBytes: sql`upload_bytes + ${b}` };
-    await db.update(devicesTable)
-      .set({ ...dir, totalBytes: sql`total_bytes + ${b}`, lastSeen: now, isOnline: true })
-      .where(eq(devicesTable.ip, device.ip));
-  } catch (err) {
-    logger.error({ err }, "Error generating realtime traffic");
+    for (const [ip, t] of totals) {
+      await tx.update(devicesTable).set({
+        downloadBytes: sql`download_bytes + ${t.down}`, uploadBytes: sql`upload_bytes + ${t.up}`,
+        totalBytes: sql`total_bytes + ${t.down + t.up}`, lastSeen: t.last, isOnline: true,
+      }).where(eq(devicesTable.ip, ip));
+    }
+
+    const [settings] = await tx.select().from(settingsTable).limit(1);
+    const attacks = events.filter((e) => e.isSuspicious && Math.random() < 0.4);
+    if (!settings?.portScanDetection || attacks.length === 0) return [];
+    return tx.insert(alertsTable).values(attacks.map((e) => ({
+      type: "suspicious_port",
+      severity: e.dstPort === 23 || e.dstPort === 445 ? "critical" : "high",
+      message: `${e.service} (port ${e.dstPort}) probe from ${e.city}, ${e.country} [${e.srcIp}]`,
+      srcIp: e.srcIp, dstIp: e.dstIp, port: e.dstPort, timestamp: e.timestamp,
+    }))).returning();
+  });
+
+  const [settings] = await db.select().from(settingsTable).limit(1);
+  if (settings?.emailAlertsEnabled && settings.alertEmail) {
+    const { sendAlertEmail } = await import("./email");
+    for (const alert of newAlerts.slice(-3)) {
+      if (await sendAlertEmail(settings.alertEmail, alert)) {
+        await db.update(alertsTable).set({ emailSent: true }).where(eq(alertsTable.id, alert.id));
+      }
+    }
   }
+  logger.info({ events: events.length, alerts: newAlerts.length }, "Caught up demo traffic");
 }

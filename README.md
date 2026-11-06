@@ -109,30 +109,22 @@ Open **http://localhost:5173** in your browser. The website forwards `/api` requ
 
 ---
 
-## 🚀 Deploying online
+## 🚀 Deploying online (free: Vercel + Neon)
 
-The project is two apps: the **website** (`artifacts/netwatch`) and the **API server** (`artifacts/api-server`). The API needs a normal always-on Node server, so it goes on Render; the website goes on Vercel.
+Everything runs on one Vercel project: the website is static and the API runs as a Vercel function (`api/index.mjs`). There is no always-on server, so instead of a timer the API "catches up" on each request and adds the demo traffic for the time that passed.
 
-### 1. Database
-Create a free PostgreSQL database on **[Neon](https://neon.tech)** and copy its connection string.
+1. Create a free PostgreSQL database on **[Neon](https://neon.tech)** and copy its pooled connection string.
+2. Create the tables once from your PC: put the string in `.env` as `DATABASE_URL` (and the direct one as `DATABASE_URL_UNPOOLED`), then run `pnpm --filter @workspace/db run push`.
+3. On **[Vercel](https://vercel.com)** import this repo, leave **Root Directory** as `./` (the root `vercel.json` does the rest) and add the environment variable `DATABASE_URL`.
+4. Deploy. The first request fills an empty database with 48 hours of demo data.
 
-### 2. API server → Render
-1. On [Render](https://render.com) click **New → Blueprint** and pick this repo (it uses `render.yaml`).
-2. When asked, paste the Neon connection string as `DATABASE_URL`.
-3. After it deploys, copy the URL, e.g. `https://network-sentinel-api.onrender.com`. Check `…/api/healthz` opens.
-
-> The free Render plan sleeps after 15 min idle; the first request then takes ~1 minute.
-
-### 3. Website → Vercel
-1. On [Vercel](https://vercel.com) import this repo.
-2. **Root Directory:** expand `artifacts` and pick **`netwatch`**.
-3. **Environment Variables:** add `VITE_API_URL` = your Render URL (no trailing `/`).
-4. Deploy.
+To start the demo data over: `cd artifacts/api-server && npm run build && npm run reset-demo`.
 
 ---
 
 ## 📁 Project structure
 ```
+api/index.mjs      Vercel function wrapping the API
 artifacts/
   api-server/      Express API (routes, traffic simulator, port scan)
   netwatch/        React website
