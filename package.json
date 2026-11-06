@@ -20,5 +20,9 @@
     "@rollup/rollup-win32-x64-msvc": "^4.60.3",
     "@tailwindcss/oxide-win32-x64-msvc": "^4.3.0",
     "lightningcss-win32-x64-msvc": "^1.32.0"
+  },
+  "dependencies": {
+    "@neon/config": "^1.11.3",
+    "@neon/env": "^1.6.15"
   }
 }

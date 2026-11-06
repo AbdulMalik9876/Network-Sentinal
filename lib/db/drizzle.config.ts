@@ -9,9 +9,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  schema: path.join(__dirname, "./src/schema/index.ts"),
+  schema: "./src/schema/index.ts", // relative: path.join breaks drizzle-kit on Windows
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    // Migrations need a direct (non-pooled) connection on Neon
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL,
   },
 });
