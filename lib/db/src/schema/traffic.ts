@@ -12,6 +12,7 @@ export const trafficEventsTable = pgTable("traffic_events", {
   bytes: integer("bytes").notNull().default(0),
   direction: text("direction").notNull().default("outbound"),
   country: text("country"),
+  service: text("service"), // e.g. "YouTube", "WhatsApp"
   city: text("city"),
   lat: real("lat"),
   lon: real("lon"),

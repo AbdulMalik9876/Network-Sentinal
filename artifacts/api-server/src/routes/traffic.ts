@@ -59,9 +59,9 @@ router.get("/traffic/summary", async (_req, res): Promise<void> => {
   const [totals] = await db
     .select({
       totalEvents: sql<number>`count(*)::int`,
-      totalBytes: sql<number>`sum(bytes)::int`,
-      inboundBytes: sql<number>`sum(case when direction = 'inbound' then bytes else 0 end)::int`,
-      outboundBytes: sql<number>`sum(case when direction = 'outbound' then bytes else 0 end)::int`,
+      totalBytes: sql<number>`sum(bytes)::float8`,
+      inboundBytes: sql<number>`sum(case when direction = 'inbound' then bytes else 0 end)::float8`,
+      outboundBytes: sql<number>`sum(case when direction = 'outbound' then bytes else 0 end)::float8`,
       suspiciousCount: sql<number>`sum(case when is_suspicious then 1 else 0 end)::int`,
     })
     .from(trafficEventsTable);
@@ -70,7 +70,7 @@ router.get("/traffic/summary", async (_req, res): Promise<void> => {
     .select({
       protocol: trafficEventsTable.protocol,
       count: sql<number>`count(*)::int`,
-      bytes: sql<number>`sum(bytes)::int`,
+      bytes: sql<number>`sum(bytes)::float8`,
     })
     .from(trafficEventsTable)
     .groupBy(trafficEventsTable.protocol)
@@ -81,7 +81,7 @@ router.get("/traffic/summary", async (_req, res): Promise<void> => {
     .select({
       country: trafficEventsTable.country,
       count: sql<number>`count(*)::int`,
-      bytes: sql<number>`sum(bytes)::int`,
+      bytes: sql<number>`sum(bytes)::float8`,
     })
     .from(trafficEventsTable)
     .where(sql`country is not null`)
@@ -93,7 +93,7 @@ router.get("/traffic/summary", async (_req, res): Promise<void> => {
     .select({
       hour: sql<string>`to_char(date_trunc('hour', timestamp), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
       count: sql<number>`count(*)::int`,
-      bytes: sql<number>`sum(bytes)::int`,
+      bytes: sql<number>`sum(bytes)::float8`,
     })
     .from(trafficEventsTable)
     .where(gte(trafficEventsTable.timestamp, new Date(Date.now() - 24 * 60 * 60 * 1000)))
@@ -125,6 +125,7 @@ router.get("/traffic/geo", async (req, res): Promise<void> => {
       bytes: trafficEventsTable.bytes,
       direction: trafficEventsTable.direction,
       country: trafficEventsTable.country,
+      service: trafficEventsTable.service,
       city: trafficEventsTable.city,
       lat: trafficEventsTable.lat,
       lon: trafficEventsTable.lon,

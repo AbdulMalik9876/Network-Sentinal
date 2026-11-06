@@ -154,6 +154,7 @@ export function TrafficDetailModal({ event, onClose }: TrafficDetailModalProps) 
               <Section title="Network">
                 <Row label="Source"      value={`${event.srcIp}:${event.srcPort}`} />
                 <Row label="Destination" value={`${event.dstIp}:${event.dstPort}`} />
+                <Row label="Site / App" value={event.service ?? "—"} />
                 <Row label="Protocol"    value={event.protocol} />
                 <Row label="Direction"   value={event.direction.toUpperCase()} />
                 <Row label="Data Size"   value={formatBytes(event.bytes)} />

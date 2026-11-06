@@ -98,6 +98,7 @@ export default function TrafficPage() {
                   <TableHead>Time</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Destination</TableHead>
+                  <TableHead>Site / App</TableHead>
                   <TableHead>Protocol</TableHead>
                   <TableHead>Direction</TableHead>
                   <TableHead className="text-right">Size</TableHead>
@@ -108,7 +109,7 @@ export default function TrafficPage() {
               <TableBody className="font-mono text-sm">
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">Loading traffic...</TableCell>
+                    <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">Loading traffic...</TableCell>
                   </TableRow>
                 ) : filteredTraffic?.map((event) => (
                   <TableRow key={event.id}
@@ -117,6 +118,7 @@ export default function TrafficPage() {
                     <TableCell className="text-muted-foreground">{formatDateTime(event.timestamp)}</TableCell>
                     <TableCell>{event.srcIp}:{event.srcPort}</TableCell>
                     <TableCell>{event.dstIp}:{event.dstPort}</TableCell>
+                    <TableCell className="font-medium">{event.service ?? "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{event.protocol}</Badge>
                     </TableCell>
@@ -138,7 +140,7 @@ export default function TrafficPage() {
                 ))}
                 {!isLoading && filteredTraffic?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">No traffic found.</TableCell>
+                    <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">No traffic found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

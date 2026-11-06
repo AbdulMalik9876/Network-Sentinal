@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, bigint, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,9 +10,9 @@ export const devicesTable = pgTable("devices", {
   vendor: text("vendor"),
   firstSeen: timestamp("first_seen", { withTimezone: true }).notNull().defaultNow(),
   lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
-  totalBytes: integer("total_bytes").notNull().default(0),
-  downloadBytes: integer("download_bytes").notNull().default(0),
-  uploadBytes: integer("upload_bytes").notNull().default(0),
+  totalBytes: bigint("total_bytes", { mode: "number" }).notNull().default(0),
+  downloadBytes: bigint("download_bytes", { mode: "number" }).notNull().default(0),
+  uploadBytes: bigint("upload_bytes", { mode: "number" }).notNull().default(0),
   isBlocked: boolean("is_blocked").notNull().default(false),
   isOnline: boolean("is_online").notNull().default(true),
 });

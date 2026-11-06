@@ -1,6 +1,13 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedInitialData, generateRealtimeTraffic } from "./lib/simulator";
+import { seedInitialData, generateRealtimeTraffic, resetDemoData } from "./lib/simulator";
+
+// `npm run reset-demo`: wipe the tables, fill them with 48h of demo data, exit.
+if (process.argv.includes("--reset-demo")) {
+  await resetDemoData();
+  logger.info("Demo data reset");
+  process.exit(0);
+}
 
 const rawPort = process.env["PORT"];
 
